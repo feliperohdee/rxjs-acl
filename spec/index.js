@@ -592,10 +592,16 @@ describe('index.js', () => {
 					fetch: {
 						someRole: [{
 							type: 'conditionExpression',
+							expression: params => params.id === auth.id
+						}, {
+							type: 'conditionExpression',
 							expression: params => _.extend({}, params, {
 								id: 'enforcedId'
 							})
 						}, {
+							type: 'conditionExpression',
+							expression: params => Observable.of(true)
+						},{
 							type: 'restrictGet',
 							select: ['id'],
 							limit: 5
