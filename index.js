@@ -39,7 +39,7 @@ module.exports = class Acl {
 
             // handle params
             Observable.from(acl)
-                .mergeMap(acl => this.handleAcl(acl, params))
+                .mergeMap(acl => this.handleAcl(acl, params, auth))
                 .subscribe(aclParams => {
                     params = aclParams;
                 }, err => {
@@ -55,7 +55,7 @@ module.exports = class Acl {
         });
     }
 
-    handleAcl(acl, params) {
+    handleAcl(acl, params, auth) {
         if (_.isBoolean(acl) || _.isNull(acl)) {
             return acl ? Observable.of(params) : Observable.throw(createError(403, `ACL refused request`));
         }
@@ -65,7 +65,7 @@ module.exports = class Acl {
         }
 
         try {
-            return this[acl.type](acl, params);
+            return this[acl.type](acl, params, auth);
         } catch (err) {
             throw createError(403, `Bad ACL: ${err.message}`);
         }
@@ -88,11 +88,11 @@ module.exports = class Acl {
         return Observable.of(params);
     }
 
-    conditionExpression(acl, params) {
+    conditionExpression(acl, params, auth) {
         let result;
 
         try {
-            result = acl.expression(params, this.model);
+            result = acl.expression(params, auth, this.model);
         } catch (err) {
             throw err;
         }

@@ -394,13 +394,13 @@ describe('index.js', () => {
 	});
 
 	describe('conditionExpression', () => {
-		it('should pass params and model instance', done => {
+		it('should pass params, auth and model instance', done => {
 			acl.acls = {
 				model: {
 					fetch: {
 						someRole: {
 							type: 'conditionExpression',
-							expression: (params, model) => !!(params && model instanceof Model)
+							expression: (params, auth, model) => !!(params && auth && model instanceof Model)
 						}
 					}
 				}

@@ -29,10 +29,10 @@ Reactive ACL's based on RxJS
 					// roles
 					public: [{
 						type: 'conditionExpression',
-						expression: (params, model) => !!auth.id // should have auth.id
+						expression: (params, auth, model) => !!auth.id // should have auth.id
 					}, {
 						type: 'conditionExpression',
-						expression: (params, model) => model.get(auth.id)
+						expression: (params, auth, model) => model.get(auth.id)
 							.map(response => !!response) // can return an Observable, confirming user existence for example
 					}, {
 						type: 'conditionExpression',
