@@ -22,7 +22,7 @@ describe('index.js', () => {
 
 	beforeEach(() => {
 		model = new Model();
-		acl = new Acl(model, {});
+		acl = new Acl({}, model);
 
 		acl.acls = _.clone({
 			model: {

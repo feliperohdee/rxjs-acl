@@ -5,9 +5,9 @@ const {
 } = require('rxjs');
 
 module.exports = class Acl {
-    constructor(model, acls, options = {}) {
-        this.model = model;
+    constructor(acls, model, options = {}) {
         this.acls = acls;
+        this.model = model;
         this.options = options;
     }
 
