@@ -186,6 +186,25 @@ describe('index.js', () => {
 				});
 		});
 
+		it('should block silently', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: null
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(params, auth, {
+					silent: true
+				})
+				.mergeMap(model.fetch.bind(model))
+				.subscribe(null, null, done);
+		});
+
+
 		it('should grant if true', done => {
 			acl.acls = {
 				model: {
@@ -601,7 +620,7 @@ describe('index.js', () => {
 						}, {
 							type: 'conditionExpression',
 							expression: params => Observable.of(true)
-						},{
+						}, {
 							type: 'restrictGet',
 							select: ['id'],
 							limit: 5

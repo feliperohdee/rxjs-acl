@@ -18,7 +18,9 @@ module.exports = class Acl {
             return () => Observable.throw(createError(403, `There are no ACL's namespace for ${namespace}`));
         }
 
-        return (params, auth) => Observable.create(subscriber => {
+        return (params, auth, options = {
+            silent: false
+        }) => Observable.create(subscriber => {
             if (_.isNil(params)) {
                 return subscriber.error(createError(403, `No params object provided`));
             }
@@ -45,6 +47,10 @@ module.exports = class Acl {
                 }, err => {
                     if (_.isString(err)) {
                         err = createError(500, err);
+                    }
+
+                    if(options.silent){
+                        subscriber.complete();
                     }
 
                     subscriber.error(err);
