@@ -198,7 +198,7 @@ describe('index.js', () => {
 			const fetch = acl.get('model.fetch');
 
 			fetch(params, auth, {
-					silent: true
+					rejectSilently: true
 				})
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, null, done);

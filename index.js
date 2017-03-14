@@ -19,7 +19,7 @@ module.exports = class Acl {
         }
 
         return (params, auth, options = {
-            silent: false
+            rejectSilently: false
         }) => Observable.create(subscriber => {
             if (_.isNil(params)) {
                 return subscriber.error(createError(403, `No params object provided`));
@@ -49,7 +49,7 @@ module.exports = class Acl {
                         err = createError(500, err);
                     }
 
-                    if(options.silent){
+                    if(options.rejectSilently){
                         subscriber.complete();
                     }
 
