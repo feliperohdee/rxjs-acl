@@ -51,6 +51,10 @@ module.exports = class Acl {
                     acl
                 ]) => this.handle(type, acl, args, auth))
                 .reduce((reduction, args) => {
+                    if(!args){
+                        throw createError(403, `ACL refused request`);
+                    }
+
                     return _.extend({}, reduction, args);
                 }, args)
                 .catch(err => {
@@ -76,7 +80,7 @@ module.exports = class Acl {
     }
 
     boolean(acl, args) {
-        return acl ? Observable.of(args) : Observable.throw(createError(403, `ACL refused request`));
+        return acl ? Observable.of(args) : Observable.of(false);
     }
 
     select(selection, args) {
@@ -118,12 +122,8 @@ module.exports = class Acl {
         }
 
         return result.map(result => {
-            if (!result) {
-                throw createError(403);
-            }
-
             if (result instanceof Error) {
-                throw createError(403, result);
+                throw createError(result);
             }
 
             return result;

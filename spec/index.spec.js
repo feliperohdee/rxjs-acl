@@ -3,6 +3,7 @@ const sinon = require('sinon');
 const sinonChai = require('sinon-chai');
 
 const _ = require('lodash');
+const createError = require('http-errors');
 const {
 	Observable
 } = require('rxjs');
@@ -429,7 +430,7 @@ describe('index.js', () => {
 				}, null, done);
 		});
 
-		it('should handle direct function', done => {
+		it('should handle implicit expression', done => {
 			acl.acls = {
 				model: {
 					fetch: {
@@ -518,7 +519,7 @@ describe('index.js', () => {
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('Forbidden');
+					expect(err.message).to.equal('ACL refused request');
 					done();
 				});
 		});
@@ -549,7 +550,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							expression: args => new Error('unknown error')
+							expression: args => createError(404, 'Unknown error')
 						}
 					}
 				}
@@ -562,8 +563,8 @@ describe('index.js', () => {
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('unknown error');
+					expect(err.statusCode).to.equal(404);
+					expect(err.message).to.equal('Unknown error');
 					done();
 				});
 		});
@@ -607,7 +608,7 @@ describe('index.js', () => {
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('Forbidden');
+					expect(err.message).to.equal('ACL refused request');
 					done();
 				});
 		});
