@@ -29,6 +29,7 @@ module.exports = class Acl {
                 return Observable.throw(createError(403, `No auth object provided`));
             }
 
+            let operation;
             let acl = _.get(aclContext, auth.role);
 
             if (_.isUndefined(acl)) {
@@ -36,13 +37,15 @@ module.exports = class Acl {
             }
 
             if (_.isBoolean(acl) || _.isNull(acl)) {
-                acl = {
-                    boolean: acl
-                }
+                operation = Observable.of(['boolean', acl]);
+            } else if (_.isFunction(acl)) {
+                operation = Observable.of(['expression', acl]);
+            } else {
+                operation = Observable.pairs(acl);
             }
 
             // handle args
-            return Observable.pairs(acl)
+            return operation
                 .mergeMap(([
                     type,
                     acl
@@ -55,7 +58,7 @@ module.exports = class Acl {
                         return Observable.empty();
                     }
 
-                    throw createError(500, err);
+                    throw createError(err.status || 500, err);
                 });
         }
     }

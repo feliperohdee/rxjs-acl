@@ -429,13 +429,54 @@ describe('index.js', () => {
 				}, null, done);
 		});
 
+		it('should handle direct function', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: (args, auth, model) => !!(args && auth && model instanceof Model)
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
+				}, null, done);
+		});
+
+		it('should handle expression exception', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: (args, auth, model) => {
+							throw new Error('error');
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(null, err => {
+					expect(err.message).to.equal('Bad ACL: error');
+					done();
+				});
+		});
+
 		it('should extend args', done => {
 			acl.acls = {
 				model: {
 					fetch: {
 						someRole: {
 							expression: args => _.extend({}, args, {
-								id: auth.id
+								extended: 'extended'
 							})
 						}
 					}
@@ -446,12 +487,15 @@ describe('index.js', () => {
 
 			fetch(args, auth)
 				.do(args => {
-					expect(args.id).to.equal('someId');
+					expect(args.extended).to.equal('extended');
 				})
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(args);
+					expect(Model.fetchSpy).to.have.been.calledWith({
+						id: 'someId',
+						extended: 'extended'
+					});
 				}, null, done);
 		});
 
