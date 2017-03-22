@@ -9,7 +9,7 @@ Reactive ACL's based on RxJS
 		const Acl = require('smallorange-acl');
 		const = new Model();
 
-		const mockedParams = {
+		const mockedArgs = {
 			id: 'someId',
 			select: ['id', 'name', 'password'],
 			limit: 100
@@ -27,21 +27,20 @@ Reactive ACL's based on RxJS
 				// method or operation
 				fetch: {
 					// roles
-					public: [{
-						type: 'conditionExpression',
-						expression: (params, auth, model) => !!auth.id // should have auth.id
-					}, {
-						type: 'conditionExpression',
-						expression: (params, auth, model) => model.get(auth.id)
-							.map(response => !!response) // can return an Observable, confirming user existence for example
-					}, {
-						type: 'conditionExpression',
-						expression: (params, model) => params.id = auth.id // enforce params.id to be same of auth.id
-					}, {
-						type: 'restrictGet',
-						limit: 10, // restrict params.limit to 10
-						select: ['id', 'name'] // restrict params.select to just id,name
-					}],
+					public: {
+						expression: (args, auth, model) => {
+							// ensure auth.id
+							if(!auth.id){
+								return false;	
+							}
+							
+							// can return an Observable, confirming user existence for example
+							return model.get(auth.id)
+									.map(response => !!response);
+						},
+						limit: 10, // restrict args.limit to 10
+						select: ['id', 'name'] // restrict args.select to just id,name
+					},
 					admin: true // grant free access,
 					unpredictable: false // block all access
 				}
@@ -51,6 +50,6 @@ Reactive ACL's based on RxJS
 		const acl = new Acl(model, aclRules);
 		const modelAclContext = acl.get('model.fetch');
 		
-		modelAclContext(mockedParams, mockedAuth)
-				.mergeMap(aclParams => model.fetch(aclParams))
+		modelAclContext(mockedArgs, mockedAuth)
+				.mergeMap(aclargs => model.fetch(aclargs))
 				.subscribe(nextFn, errFn);
