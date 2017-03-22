@@ -18,87 +18,93 @@ module.exports = class Acl {
             return () => Observable.throw(createError(403, `There are no ACL's namespace for ${namespace}`));
         }
 
-        return (params, auth, options = {
+        return (args, auth, options = {
             rejectSilently: false
-        }) => Observable.create(subscriber => {
-            if (_.isNil(params)) {
-                return subscriber.error(createError(403, `No params object provided`));
+        }) => {
+            if (_.isNil(args)) {
+                return Observable.throw(createError(403, `No args object provided`));
             }
 
             if (_.isNil(auth)) {
-                return subscriber.error(createError(403, `No auth object provided`));
+                return Observable.throw(createError(403, `No auth object provided`));
             }
 
             let acl = _.get(aclContext, auth.role);
 
             if (_.isUndefined(acl)) {
-                return subscriber.error(createError(403, `There are no ACL's role for ${namespace}`));
+                return Observable.throw(createError(403, `There are no ACL's role for ${namespace}`));
             }
 
-            if (!_.isArray(acl)) {
-                acl = [acl];
+            if (_.isBoolean(acl) || _.isNull(acl)) {
+                acl = {
+                    boolean: acl
+                }
             }
 
-            // handle params
-            Observable.from(acl)
-                .mergeMap(acl => this.handleAcl(acl, params, auth))
-                .subscribe(aclParams => {
-                    params = aclParams;
-                }, err => {
-                    if (_.isString(err)) {
-                        err = createError(500, err);
+            // handle args
+            return Observable.pairs(acl)
+                .mergeMap(([
+                    type,
+                    acl
+                ]) => this.handle(type, acl, args, auth))
+                .reduce((reduction, args) => {
+                    return _.extend({}, reduction, args);
+                }, args)
+                .catch(err => {
+                    if (options.rejectSilently) {
+                        return Observable.empty();
                     }
 
-                    if(options.rejectSilently){
-                        subscriber.complete();
-                    }
-
-                    subscriber.error(err);
-                }, () => {
-                    subscriber.next(params);
-                    subscriber.complete();
+                    throw createError(500, err);
                 });
-        });
+        }
     }
 
-    handleAcl(acl, params, auth) {
-        if (_.isBoolean(acl) || _.isNull(acl)) {
-            return acl ? Observable.of(params) : Observable.throw(createError(403, `ACL refused request`));
-        }
-
-        if (_.isNil(this[acl.type])) {
-            throw createError(403, 'Bad ACL');
+    handle(type, acl, args, auth) {
+        if (_.isNil(this[type])) {
+            throw createError(403, 'Inexistent ACL');
         }
 
         try {
-            return this[acl.type](acl, params, auth);
+            return this[type](acl, args, auth);
         } catch (err) {
             throw createError(403, `Bad ACL: ${err.message}`);
         }
     }
 
-    restrictGet(acl, params) {
-        if (acl.select) {
-            params.select = _.intersection(params.select || acl.select, acl.select);
-
-            if (_.isEmpty(params.select)) {
-                return Observable.throw(`None select field is allowed, you can select ${acl.select.join(',')}`);
-            }
-        }
-
-        if (acl.limit) {
-            params.limit = _.inRange(params.limit, 1, acl.limit) ? params.limit : acl.limit;
-        }
-
-
-        return Observable.of(params);
+    boolean(acl, args) {
+        return acl ? Observable.of(args) : Observable.throw(createError(403, `ACL refused request`));
     }
 
-    conditionExpression(acl, params, auth) {
+    select(selection, args) {
+        if (!_.isArray(selection)) {
+            selection = [selection];
+        }
+
+        const select = _.intersection(args.select || selection, selection);
+
+        if (_.isEmpty(select)) {
+            return Observable.throw(`None select field is allowed, you can select ${selection.join(',')}`);
+        }
+
+        return Observable.of({
+            select
+        });
+    }
+
+    limit(max, args) {
+        const limit = _.inRange(args.limit, 1, max) ? args.limit : max;
+
+        return Observable.of({
+            limit
+        });
+    }
+
+    expression(expression, args, auth) {
         let result;
 
         try {
-            result = acl.expression(params, auth, this.model);
+            result = expression(args, auth, this.model);
         } catch (err) {
             throw err;
         }
@@ -110,10 +116,14 @@ module.exports = class Acl {
 
         return result.map(result => {
             if (!result) {
-                throw createError(403, acl.onError);
+                throw createError(403);
             }
 
-            return _.extend({}, params, result);
+            if (result instanceof Error) {
+                throw createError(403, result);
+            }
+
+            return result;
         });
     }
 }

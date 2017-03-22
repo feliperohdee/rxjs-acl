@@ -17,7 +17,7 @@ chai.use(sinonChai);
 describe('index.js', () => {
 	let acl;
 	let model;
-	let params;
+	let args;
 	let auth;
 
 	beforeEach(() => {
@@ -32,7 +32,7 @@ describe('index.js', () => {
 			}
 		}, true);
 
-		params = {
+		args = {
 			id: 'someId'
 		};
 
@@ -47,7 +47,7 @@ describe('index.js', () => {
 		it('should return 403 if no ACL context', done => {
 			const fetch = acl.get('inexistent.context');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -56,16 +56,16 @@ describe('index.js', () => {
 				});
 		});
 
-		it('should return 403 if no params', done => {
+		it('should return 403 if no args', done => {
 			const fetch = acl.get('model.fetch');
 
-			params = null;
+			args = null;
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('No params object provided');
+					expect(err.message).to.equal('No args object provided');
 					done();
 				});
 		});
@@ -75,7 +75,7 @@ describe('index.js', () => {
 
 			auth = null;
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -89,7 +89,7 @@ describe('index.js', () => {
 
 			auth.role = 'forbiddenRole';
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -104,7 +104,7 @@ describe('index.js', () => {
 					fetch: {
 						someRole: {
 							type: '___conditionExpression',
-							expression: params => params.id = 'enforcedId'
+							expression: args => args.id = 'enforcedId'
 						}
 					}
 				}
@@ -112,34 +112,11 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('Bad ACL');
-					done();
-				});
-		});
-
-		it('should block if acl expression is wrong', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							type: 'conditionExpression',
-							__expression: params => params.id = 'enforcedId'
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(params, auth)
-				.mergeMap(model.fetch.bind(model))
-				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('Bad ACL: acl.expression is not a function');
+					expect(err.message).to.equal('Inexistent ACL');
 					done();
 				});
 		});
@@ -157,7 +134,7 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -177,7 +154,7 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -197,7 +174,7 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth, {
+			fetch(args, auth, {
 					rejectSilently: true
 				})
 				.mergeMap(model.fetch.bind(model))
@@ -216,194 +193,132 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(params);
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
 				}, null, done);
 		});
 	});
 
-	describe('restrictGet', () => {
-		describe('limit', () => {
-			it('should params to have limit key when no one provided', done => {
-				acl.acls = {
-					model: {
-						fetch: {
-							someRole: {
-								type: 'restrictGet',
-								limit: 1
-							}
-						}
-					}
-				}
-
-				const fetch = acl.get('model.fetch');
-
-				fetch(params, auth)
-					.do(params => {
-						expect(params.limit).to.equal(1);
-					})
-					.mergeMap(model.fetch.bind(model))
-					.toArray()
-					.subscribe(() => {
-						expect(Model.fetchSpy).to.have.been.calledWith(params);
-					}, null, done);
-			});
-
-			it('should acl.limit to have precedence over params.limit when out of range', done => {
-				acl.acls = {
-					model: {
-						fetch: {
-							someRole: {
-								type: 'restrictGet',
-								limit: 1
-							}
-						}
-					}
-				}
-
-				const fetch = acl.get('model.fetch');
-
-				params.limit = 10;
-
-				fetch(params, auth)
-					.do(params => {
-						expect(params.limit).to.equal(1);
-					})
-					.mergeMap(model.fetch.bind(model))
-					.toArray()
-					.subscribe(() => {
-						expect(Model.fetchSpy).to.have.been.calledWith(params);
-					}, null, done);
-			});
-
-			it('should params.limit to have precedence over acl.limit when in range', done => {
-				acl.acls = {
-					model: {
-						fetch: {
-							someRole: {
-								type: 'restrictGet',
-								limit: 10
-							}
-						}
-					}
-				}
-
-				const fetch = acl.get('model.fetch');
-				params.limit = 9;
-
-				fetch(params, auth)
-					.do(params => {
-						expect(params.limit).to.equal(9);
-					})
-					.mergeMap(model.fetch.bind(model))
-					.toArray()
-					.subscribe(() => {
-						expect(Model.fetchSpy).to.have.been.calledWith(params);
-					}, null, done);
-			});
-		});
-
-		describe('select', () => {
-			it('should params to have select key when no one provided', done => {
-				acl.acls = {
-					model: {
-						fetch: {
-							someRole: {
-								type: 'restrictGet',
-								select: ['id']
-							}
-						}
-					}
-				}
-
-				const fetch = acl.get('model.fetch');
-
-				fetch(params, auth)
-					.do(params => {
-						expect(params.select).to.deep.equal(['id']);
-					})
-					.mergeMap(model.fetch.bind(model))
-					.toArray()
-					.subscribe(() => {
-						expect(Model.fetchSpy).to.have.been.calledWith(params);
-					}, null, done);
-			});
-
-			it('should acl.select to have precedence over params.select when out of range', done => {
-				acl.acls = {
-					model: {
-						fetch: {
-							someRole: {
-								type: 'restrictGet',
-								select: ['id']
-							}
-						}
-					}
-				}
-
-				params.select = ['id', 'name', 'age'];
-
-				const fetch = acl.get('model.fetch');
-
-				fetch(params, auth)
-					.do(params => {
-						expect(params.select).to.deep.equal(['id']);
-					})
-					.mergeMap(model.fetch.bind(model))
-					.toArray()
-					.subscribe(() => {
-						expect(Model.fetchSpy).to.have.been.calledWith(params);
-					}, null, done);
-			});
-
-			it('should params.select to have precedence over acl.select when in range', done => {
-				acl.acls = {
-					model: {
-						fetch: {
-							someRole: {
-								type: 'restrictGet',
-								select: ['id', 'name', 'age']
-							}
-						}
-					}
-				}
-
-				params.select = ['id', 'name'];
-
-				const fetch = acl.get('model.fetch');
-
-				fetch(params, auth)
-					.do(params => {
-						expect(params.select).to.deep.equal(['id', 'name']);
-					})
-					.mergeMap(model.fetch.bind(model))
-					.toArray()
-					.subscribe(() => {
-						expect(Model.fetchSpy).to.have.been.calledWith(params);
-					}, null, done);
-			});
-		});
-
-		it('should throw if any select fields are provided', done => {
+	describe('select', () => {
+		it('should args to have select key when no one provided', done => {
 			acl.acls = {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'restrictGet',
+							select: ['id']
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.do(args => {
+					expect(args.select).to.deep.equal(['id']);
+				})
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
+				}, null, done);
+		});
+
+		it('should acl.select restrict args.select when out of range', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							select: ['id']
+						}
+					}
+				}
+			}
+
+			args.select = ['id', 'name', 'age'];
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.do(args => {
+					expect(args.select).to.deep.equal(['id']);
+				})
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith({
+						id: 'someId',
+						select: ['id']
+					});
+				}, null, done);
+		});
+
+		it('should args.select not restrict acl.select when in range', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
 							select: ['id', 'name', 'age']
 						}
 					}
 				}
 			}
 
-			params.select = ['_id', '_name'];
+			args.select = ['id', 'name'];
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
+				.do(args => {
+					expect(args.select).to.deep.equal(['id', 'name']);
+				})
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
+				}, null, done);
+		});
+
+		it('should handle no arrays', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							select: 'id'
+						}
+					}
+				}
+			}
+
+			args.select = ['id', 'name', 'age'];
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.subscribe(args => {
+					expect(args.select).to.deep.equal(['id']);
+				}, null, done);
+		});
+
+		it('should throw if no select fields are provided', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							select: ['id', 'name', 'age']
+						}
+					}
+				}
+			}
+
+			args.select = ['_id', '_name'];
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
 				.subscribe(null, err => {
 					expect(err.message).to.equal('None select field is allowed, you can select id,name,age');
 
@@ -412,14 +327,13 @@ describe('index.js', () => {
 		});
 	});
 
-	describe('conditionExpression', () => {
-		it('should pass params, auth and model instance', done => {
+	describe('limit', () => {
+		it('should args to have limit key when no one provided', done => {
 			acl.acls = {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: (params, auth, model) => !!(params && auth && model instanceof Model)
+							limit: 1
 						}
 					}
 				}
@@ -427,21 +341,100 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
+				.do(args => {
+					expect(args.limit).to.equal(1);
+				})
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(params);
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
 				}, null, done);
 		});
 
-		it('should extend params', done => {
+		it('should acl.limit restrict args.limit when out of range', done => {
 			acl.acls = {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: params => _.extend({}, params, {
+							limit: 1
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			args.limit = 10;
+
+			fetch(args, auth)
+				.do(args => {
+					expect(args.limit).to.equal(1);
+				})
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith({
+						id: 'someId',
+						limit: 1
+					});
+				}, null, done);
+		});
+
+		it('should args.limit to have precedence over acl.limit when in range', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							limit: 10
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+			args.limit = 9;
+
+			fetch(args, auth)
+				.do(args => {
+					expect(args.limit).to.equal(9);
+				})
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
+				}, null, done);
+		});
+	});
+
+	describe('expression', () => {
+		it('should pass args, auth and model instance', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							expression: (args, auth, model) => !!(args && auth && model instanceof Model)
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
+				}, null, done);
+		});
+
+		it('should extend args', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							expression: args => _.extend({}, args, {
 								id: auth.id
 							})
 						}
@@ -451,14 +444,14 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
-				.do(params => {
-					expect(params.id).to.equal('someId');
+			fetch(args, auth)
+				.do(args => {
+					expect(args.id).to.equal('someId');
 				})
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(params);
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
 				}, null, done);
 		});
 
@@ -467,8 +460,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: params => params.id === auth.id
+							expression: args => args.id === auth.id
 						}
 					}
 				}
@@ -478,7 +470,7 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -492,8 +484,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: params => params.id === auth.id
+							expression: args => args.id === auth.id
 						}
 					}
 				}
@@ -501,22 +492,20 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(params);
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
 				}, null, done);
 		});
 
-		it('should block with custom error if condition not satisfied', done => {
+		it('should block with custom error if returns an error', done => {
 			acl.acls = {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: params => params.id === auth.id,
-							onError: 'unknown error'
+							expression: args => new Error('unknown error')
 						}
 					}
 				}
@@ -526,7 +515,7 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -540,8 +529,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: params => Observable.throw('Observable throw')
+							expression: args => Observable.throw('Observable throw')
 						}
 					}
 				}
@@ -549,7 +537,7 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(500);
@@ -563,8 +551,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: params => Observable.of(false)
+							expression: args => Observable.of(false)
 						}
 					}
 				}
@@ -572,7 +559,7 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
@@ -586,8 +573,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							type: 'conditionExpression',
-							expression: params => Observable.of(true)
+							expression: args => Observable.of(true)
 						}
 					}
 				}
@@ -595,54 +581,45 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
+			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(params);
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
 				}, null, done);
 		});
 	});
 
 	describe('combined', () => {
-		it('should accept combined ACL\'s', done => {
+		it('should accept composed ACL\'s', done => {
 			acl.acls = {
 				model: {
 					fetch: {
-						someRole: [{
-							type: 'conditionExpression',
-							expression: params => params.id === auth.id
-						}, {
-							type: 'conditionExpression',
-							expression: params => _.extend({}, params, {
+						someRole: {
+							expression: args => ({
 								id: 'enforcedId'
-							})
-						}, {
-							type: 'conditionExpression',
-							expression: params => Observable.of(true)
-						}, {
-							type: 'restrictGet',
-							select: ['id'],
-							limit: 5
-						}]
+							}),
+							limit: 5,
+							select: ['id']
+						}
 					}
 				}
-			}
+			};
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(params, auth)
-				.do(aclParams => {
-					expect(aclParams.id).to.equal('enforcedId');
-					expect(aclParams.select).to.deep.equal(['id']);
-					expect(aclParams.limit).to.equal(5);
+			fetch(args, auth)
+				.do(aclArgs => {
+					expect(aclArgs.id).to.equal('enforcedId');
+					expect(aclArgs.select).to.deep.equal(['id']);
+					expect(aclArgs.limit).to.equal(5);
 
-					params = aclParams;
+					args = aclArgs;
 				})
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(params);
+					expect(Model.fetchSpy).to.have.been.calledWith(args);
 				}, null, done);
 		});
 	});
