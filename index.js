@@ -5,10 +5,9 @@ const {
 } = require('rxjs');
 
 module.exports = class Acl {
-    constructor(acls, model, options = {}) {
+    constructor(acls, context) {
         this.acls = acls;
-        this.model = model;
-        this.options = options;
+        this.context = context;
     }
 
     get(namespace) {
@@ -111,7 +110,7 @@ module.exports = class Acl {
         let result;
 
         try {
-            result = expression(args, auth, this.model);
+            result = expression(args, auth, this.context);
         } catch (err) {
             throw err;
         }

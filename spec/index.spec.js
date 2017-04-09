@@ -23,7 +23,9 @@ describe('index.js', () => {
 
 	beforeEach(() => {
 		model = new Model();
-		acl = new Acl({}, model);
+		acl = new Acl({}, {
+			model
+		});
 
 		acl.acls = _.clone({
 			model: {
@@ -409,12 +411,12 @@ describe('index.js', () => {
 	});
 
 	describe('expression', () => {
-		it('should pass args, auth and model instance', done => {
+		it('should pass args, auth and context', done => {
 			acl.acls = {
 				model: {
 					fetch: {
 						someRole: {
-							expression: (args, auth, model) => !!(args && auth && model instanceof Model)
+							expression: (args, auth, context) => !!(args && auth && context.model instanceof Model)
 						}
 					}
 				}
@@ -434,7 +436,7 @@ describe('index.js', () => {
 			acl.acls = {
 				model: {
 					fetch: {
-						someRole: (args, auth, model) => !!(args && auth && model instanceof Model)
+						someRole: (args, auth, context) => !!(args && auth && context.model instanceof Model)
 					}
 				}
 			}

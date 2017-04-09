@@ -28,14 +28,14 @@ Reactive ACL's based on RxJS
 				fetch: {
 					// roles
 					public: {
-						expression: (args, auth, model) => {
+						expression: (args, auth, context) => {
 							// ensure auth.id
 							if(!auth.id){
 								return false;	
 							}
 							
 							// can return an Observable, confirming user existence for example
-							return model.get(auth.id)
+							return context.model.get(auth.id)
 									.map(response => !!response);
 						},
 						limit: 10, // restrict args.limit to 10
