@@ -10,10 +10,20 @@ module.exports = class Acl {
         this.context = context;
     }
 
-    get(namespace) {
-        const aclContext = _.get(this.acls, namespace, false);
+    resolveRole(aclNamespace, role){
+        if(_.isArray(role)){
+            const acls = _.values(_.pick(aclNamespace, role));
+            
+            return _.first(acls) || undefined;
+        }
 
-        if (!aclContext) {
+        return _.get(aclNamespace, role);
+    }
+
+    get(namespace) {
+        const aclNamespace = _.get(this.acls, namespace, false);
+
+        if (!aclNamespace) {
             return () => Observable.throw(createError(403, `There are no ACL's namespace for ${namespace}`));
         }
 
@@ -29,7 +39,7 @@ module.exports = class Acl {
             }
 
             let operation;
-            let acl = _.get(aclContext, auth.role);
+            let acl = this.resolveRole(aclNamespace, auth.role);
 
             if (_.isUndefined(acl)) {
                 return Observable.throw(createError(403, `There are no ACL's role for ${namespace}`));

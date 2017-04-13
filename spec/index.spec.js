@@ -46,6 +46,32 @@ describe('index.js', () => {
 		}, true);
 	});
 
+	describe('resolveRole', () => {
+		it('should resolve get single role', () => {
+			const role = acl.resolveRole(acl.acls.model.fetch, 'someRole');
+
+			expect(role).to.be.true;
+		});
+
+		it('should return undefined if single role doesn\'t exists', () => {
+			const role = acl.resolveRole(acl.acls.model.fetch, 'inexistentRole');
+
+			expect(role).to.be.undefined;
+		});
+
+		it('should resolve get first valid role', () => {
+			const role = acl.resolveRole(acl.acls.model.fetch, ['inexistentRole','someRole']);
+
+			expect(role).to.be.true;
+		});
+
+		it('should return undefined if all roles doesn\'t exists', () => {
+			const role = acl.resolveRole(acl.acls.model.fetch, ['inexistentRole', 'inexistentRole2']);
+
+			expect(role).to.be.undefined;
+		});
+	});
+
 	describe('no ACL context, no ACL role, wrong ACL', () => {
 		it('should return 403 if no ACL context', done => {
 			const fetch = acl.get('inexistent.context');
@@ -106,8 +132,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							type: '___conditionExpression',
-							expression: args => args.id = 'enforcedId'
+							__expression: args => args.id = 'enforcedId'
 						}
 					}
 				}
