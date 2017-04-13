@@ -60,7 +60,7 @@ describe('index.js', () => {
 		});
 
 		it('should resolve get first valid role', () => {
-			const role = acl.resolveRole(acl.acls.model.fetch, ['inexistentRole','someRole']);
+			const role = acl.resolveRole(acl.acls.model.fetch, ['inexistentRole', 'someRole']);
 
 			expect(role).to.be.true;
 		});
@@ -72,59 +72,95 @@ describe('index.js', () => {
 		});
 	});
 
-	describe('no ACL context, no ACL role, wrong ACL', () => {
-		it('should return 403 if no ACL context', done => {
-			const fetch = acl.get('inexistent.context');
-
-			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
-				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('There are no ACL\'s namespace for inexistent.context');
-					done();
-				});
+	describe('get', () => {
+		beforeEach(() => {
+			sinon.stub(acl, 'handle')
+				.returns(Observable.of(true));
 		});
 
-		it('should return 403 if no args', done => {
-			const fetch = acl.get('model.fetch');
-
-			args = null;
-
-			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
-				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('No args object provided');
-					done();
-				});
+		afterEach(() => {
+			acl.handle.restore();
 		});
 
-		it('should return 403 if no auth', done => {
+		it('should call handle', done => {
 			const fetch = acl.get('model.fetch');
 
-			auth = null;
-
 			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
-				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('No auth object provided');
-					done();
-				});
+				.subscribe(() => {
+					expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
+				}, null, done);
 		});
 
-		it('should return 403 if no ACL role', done => {
-			const fetch = acl.get('model.fetch');
+		describe('no ACL context, no ACL role, wrong ACL', () => {
+			it('should return 403 if no ACL context', done => {
+				const fetch = acl.get('inexistent.context');
 
-			auth.role = 'forbiddenRole';
+				fetch(args, auth)
+					.subscribe(null, err => {
+						expect(err.statusCode).to.equal(403);
+						expect(err.message).to.equal('There are no ACL\'s namespace for inexistent.context');
+						done();
+					});
+			});
 
-			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
-				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
-					expect(err.message).to.equal('There are no ACL\'s role for model.fetch');
-					done();
-				});
+			it('should return 403 if no args', done => {
+				const fetch = acl.get('model.fetch');
+
+				args = null;
+
+				fetch(args, auth)
+					.subscribe(null, err => {
+						expect(err.statusCode).to.equal(403);
+						expect(err.message).to.equal('No args object provided');
+						done();
+					});
+			});
+
+			it('should return 403 if no auth', done => {
+				const fetch = acl.get('model.fetch');
+
+				auth = null;
+
+				fetch(args, auth)
+					.subscribe(null, err => {
+						expect(err.statusCode).to.equal(403);
+						expect(err.message).to.equal('No auth object provided');
+						done();
+					});
+			});
+
+			it('should return 403 if no ACL role', done => {
+				const fetch = acl.get('model.fetch');
+
+				auth.role = 'forbiddenRole';
+
+				fetch(args, auth)
+					.subscribe(null, err => {
+						expect(err.statusCode).to.equal(403);
+						expect(err.message).to.equal('There are no ACL\'s role for model.fetch');
+						done();
+					});
+			});
+		});
+	});
+
+	describe('handle', () => {
+		beforeEach(() => {
+			sinon.stub(acl, 'boolean')
+				.returns(Observable.of(true));
+			sinon.stub(acl, 'select')
+				.returns(Observable.of(true));
+			sinon.stub(acl, 'limit')
+				.returns(Observable.of(true));
+			sinon.stub(acl, 'expression')
+				.returns(Observable.of(true));
+		});
+
+		afterEach(() => {
+			acl.boolean.restore();
+			acl.select.restore();
+			acl.limit.restore();
+			acl.expression.restore();
 		});
 
 		it('should block if inexistent acl type', done => {
@@ -141,10 +177,92 @@ describe('index.js', () => {
 			const fetch = acl.get('model.fetch');
 
 			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('Inexistent ACL');
+					done();
+				});
+		});
+
+		it('should call boolean', done => {
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.subscribe(() => {
+					expect(acl.boolean).to.have.been.calledWith(true, args, auth);
+				}, null, done);
+		});
+
+		it('should call select', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							select: ['id']
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.subscribe(() => {
+					expect(acl.select).to.have.been.calledWith(['id'], args, auth);
+				}, null, done);
+		});
+
+		it('should call limit', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							limit: 10
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.subscribe(() => {
+					expect(acl.limit).to.have.been.calledWith(10, args, auth);
+				}, null, done);
+		});
+
+		it('should call expression', done => {
+			const expression = () => true;
+
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							expression
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.subscribe(() => {
+					expect(acl.expression).to.have.been.calledWith(expression, args, auth);
+				}, null, done);
+		});
+
+		it('should handle exception', done => {
+			acl.boolean.restore();
+
+			sinon.stub(acl, 'boolean')
+				.throws(new Error('ops...'));
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.subscribe(null, err => {
+					expect(err.message).to.equal('Bad ACL: ops...');
 					done();
 				});
 		});
@@ -163,7 +281,6 @@ describe('index.js', () => {
 			const fetch = acl.get('model.fetch');
 
 			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
@@ -183,7 +300,6 @@ describe('index.js', () => {
 			const fetch = acl.get('model.fetch');
 
 			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
@@ -205,7 +321,6 @@ describe('index.js', () => {
 			fetch(args, auth, {
 					rejectSilently: true
 				})
-				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, null, done);
 		});
 

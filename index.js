@@ -14,7 +14,7 @@ module.exports = class Acl {
         if(_.isArray(role)){
             const acls = _.values(_.pick(aclNamespace, role));
             
-            return _.first(acls) || undefined;
+            return _.first(acls);
         }
 
         return _.get(aclNamespace, role);
