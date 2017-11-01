@@ -46,6 +46,18 @@ describe('index.js', () => {
 		}, true);
 	});
 
+	describe('constructor', () => {
+		it('should create executors from factories', () => {
+			acl = new Acl(acl.acls, null, [
+				'model.fetch',
+				'inexistent'
+			]);
+			
+			expect(_.size(acl.execute)).to.equal(1);
+			expect(acl.execute['model.fetch']).to.be.a('function');
+		});
+	});
+
 	describe('resolveRole', () => {
 		it('should resolve get single role', () => {
 			const role = acl.resolveRole(acl.acls.model.fetch, 'someRole');

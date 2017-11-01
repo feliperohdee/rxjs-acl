@@ -5,9 +5,19 @@ const {
 } = require('rxjs');
 
 module.exports = class Acl {
-    constructor(acls, context) {
+    constructor(acls, context, factory) {
         this.acls = acls;
         this.context = context;
+
+        this.execute = _.reduce(factory, (reduction, key) => {
+            const acl = _.get(this.acls, key, null);
+
+            if(acl) {
+                reduction[key] = this.get(key);
+            }
+
+            return reduction;
+        }, {});
     }
 
     resolveRole(aclNamespace, role){
