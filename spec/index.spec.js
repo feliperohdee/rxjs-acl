@@ -54,7 +54,7 @@ describe('index.js', () => {
 			]);
 			
 			expect(_.size(acl.execute)).to.equal(1);
-			expect(acl.execute['model.fetch']).to.be.a('function');
+			expect(acl.execute.model.fetch).to.be.a('function');
 		});
 	});
 

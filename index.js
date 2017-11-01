@@ -13,7 +13,7 @@ module.exports = class Acl {
             const acl = _.get(this.acls, key, null);
 
             if(acl) {
-                reduction[key] = this.get(key);
+                reduction = _.set(reduction, key, this.get(key));
             }
 
             return reduction;
