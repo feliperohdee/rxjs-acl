@@ -82,8 +82,30 @@ describe('index.js', () => {
 			acl.handle.restore();
 		});
 
-		it('should call handle', done => {
+		it('should call handle with single level', done => {
+			acl.acls = acl.acls.model;
+
+			const fetch = acl.get('fetch');
+
+			fetch(args, auth)
+				.subscribe(() => {
+					expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
+				}, null, done);
+		});
+
+		it('should call handle with 2 levels', done => {
 			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.subscribe(() => {
+					expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
+				}, null, done);
+		});
+
+		it('should call handle with 3 levels or more', done => {
+			acl.acls.main = acl.acls;
+
+			const fetch = acl.get('main.model.fetch');
 
 			fetch(args, auth)
 				.subscribe(() => {
@@ -148,18 +170,12 @@ describe('index.js', () => {
 		beforeEach(() => {
 			sinon.stub(acl, 'boolean')
 				.returns(Observable.of(true));
-			sinon.stub(acl, 'select')
-				.returns(Observable.of(true));
-			sinon.stub(acl, 'limit')
-				.returns(Observable.of(true));
 			sinon.stub(acl, 'expression')
 				.returns(Observable.of(true));
 		});
 
 		afterEach(() => {
 			acl.boolean.restore();
-			acl.select.restore();
-			acl.limit.restore();
 			acl.expression.restore();
 		});
 
@@ -190,44 +206,6 @@ describe('index.js', () => {
 			fetch(args, auth)
 				.subscribe(() => {
 					expect(acl.boolean).to.have.been.calledWith(true, args, auth);
-				}, null, done);
-		});
-
-		it('should call select', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							select: ['id']
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.subscribe(() => {
-					expect(acl.select).to.have.been.calledWith(['id'], args, auth);
-				}, null, done);
-		});
-
-		it('should call limit', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							limit: 10
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.subscribe(() => {
-					expect(acl.limit).to.have.been.calledWith(10, args, auth);
 				}, null, done);
 		});
 
@@ -337,211 +315,6 @@ describe('index.js', () => {
 			const fetch = acl.get('model.fetch');
 
 			fetch(args, auth)
-				.mergeMap(model.fetch.bind(model))
-				.toArray()
-				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(args);
-				}, null, done);
-		});
-	});
-
-	describe('select', () => {
-		it('should args to have select key when no one provided', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							select: ['id']
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.do(args => {
-					expect(args.select).to.deep.equal(['id']);
-				})
-				.mergeMap(model.fetch.bind(model))
-				.toArray()
-				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(args);
-				}, null, done);
-		});
-
-		it('should acl.select restrict args.select when out of range', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							select: ['id']
-						}
-					}
-				}
-			}
-
-			args.select = ['id', 'name', 'age'];
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.do(args => {
-					expect(args.select).to.deep.equal(['id']);
-				})
-				.mergeMap(model.fetch.bind(model))
-				.toArray()
-				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith({
-						id: 'someId',
-						select: ['id']
-					});
-				}, null, done);
-		});
-
-		it('should args.select not restrict acl.select when in range', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							select: ['id', 'name', 'age']
-						}
-					}
-				}
-			}
-
-			args.select = ['id', 'name'];
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.do(args => {
-					expect(args.select).to.deep.equal(['id', 'name']);
-				})
-				.mergeMap(model.fetch.bind(model))
-				.toArray()
-				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(args);
-				}, null, done);
-		});
-
-		it('should handle no arrays', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							select: 'id'
-						}
-					}
-				}
-			}
-
-			args.select = ['id', 'name', 'age'];
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.subscribe(args => {
-					expect(args.select).to.deep.equal(['id']);
-				}, null, done);
-		});
-
-		it('should throw if no select fields are provided', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							select: ['id', 'name', 'age']
-						}
-					}
-				}
-			}
-
-			args.select = ['_id', '_name'];
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.subscribe(null, err => {
-					expect(err.message).to.equal('None select field is allowed, you can select id,name,age');
-
-					done();
-				});
-		});
-	});
-
-	describe('limit', () => {
-		it('should args to have limit key when no one provided', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							limit: 1
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.do(args => {
-					expect(args.limit).to.equal(1);
-				})
-				.mergeMap(model.fetch.bind(model))
-				.toArray()
-				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith(args);
-				}, null, done);
-		});
-
-		it('should acl.limit restrict args.limit when out of range', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							limit: 1
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-
-			args.limit = 10;
-
-			fetch(args, auth)
-				.do(args => {
-					expect(args.limit).to.equal(1);
-				})
-				.mergeMap(model.fetch.bind(model))
-				.toArray()
-				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith({
-						id: 'someId',
-						limit: 1
-					});
-				}, null, done);
-		});
-
-		it('should args.limit to have precedence over acl.limit when in range', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							limit: 10
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-			args.limit = 9;
-
-			fetch(args, auth)
-				.do(args => {
-					expect(args.limit).to.equal(9);
-				})
 				.mergeMap(model.fetch.bind(model))
 				.toArray()
 				.subscribe(() => {
@@ -783,11 +556,10 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
+							boolean: true,
 							expression: args => ({
 								id: 'enforcedId'
-							}),
-							limit: 5,
-							select: ['id']
+							})
 						}
 					}
 				}
@@ -798,8 +570,6 @@ describe('index.js', () => {
 			fetch(args, auth)
 				.do(aclArgs => {
 					expect(aclArgs.id).to.equal('enforcedId');
-					expect(aclArgs.select).to.deep.equal(['id']);
-					expect(aclArgs.limit).to.equal(5);
 
 					args = aclArgs;
 				})

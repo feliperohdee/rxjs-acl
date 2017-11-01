@@ -92,30 +92,6 @@ module.exports = class Acl {
         return acl ? Observable.of(args) : Observable.of(false);
     }
 
-    select(selection, args) {
-        if (!_.isArray(selection)) {
-            selection = [selection];
-        }
-
-        const select = _.intersection(args.select || selection, selection);
-
-        if (_.isEmpty(select)) {
-            return Observable.throw(`None select field is allowed, you can select ${selection.join(',')}`);
-        }
-
-        return Observable.of({
-            select
-        });
-    }
-
-    limit(max, args) {
-        const limit = _.inRange(args.limit, 1, max) ? args.limit : max;
-
-        return Observable.of({
-            limit
-        });
-    }
-
     expression(expression, args, auth) {
         let result;
 

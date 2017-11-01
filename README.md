@@ -37,9 +37,7 @@ Reactive ACL's based on RxJS
 							// can return an Observable, confirming user existence for example
 							return context.model.get(auth.id)
 									.map(response => !!response);
-						},
-						limit: 10, // restrict args.limit to 10
-						select: ['id', 'name'] // restrict args.select to just id,name
+						}
 					},
 					admin: true // grant free access,
 					unpredictable: false // block all access
@@ -47,7 +45,10 @@ Reactive ACL's based on RxJS
 			}
 		};
 
-		const acl = new Acl(model, aclRules);
+		const acl = new Acl(aclRules, {
+			model
+		});
+		
 		const modelAclContext = acl.get('model.fetch');
 		
 		modelAclContext(mockedArgs, mockedAuth)
