@@ -40,10 +40,6 @@ module.exports = class Acl {
         return (args, auth, options = {
             rejectSilently: false
         }) => {
-            if (_.isNil(args)) {
-                args = {};
-            }
-
             if (_.isNil(auth)) {
                 return Observable.throw(createError(403, `No auth object provided`));
             }
@@ -70,11 +66,11 @@ module.exports = class Acl {
                     acl
                 ]) => this.handle(type, acl, args, auth))
                 .reduce((reduction, args) => {
-                    if(!args){
+                    if(args === false){
                         throw createError(403, `ACL refused request`);
                     }
 
-                    return _.extend({}, reduction, args);
+                    return _.isObject(args) ? _.extend({}, reduction, args) : args;
                 }, {})
                 .catch(err => {
                     if (options.rejectSilently) {

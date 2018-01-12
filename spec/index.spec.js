@@ -207,7 +207,8 @@ describe('index.js', () => {
 					fetch(undefined, auth)
 				)
 				.subscribe(() => {
-					expect(acl.boolean).to.have.always.been.calledWith(true, {}, auth);
+					expect(acl.boolean).to.have.been.calledWith(true, null, auth);
+					expect(acl.boolean).to.have.been.calledWith(true, undefined, auth);
 				}, null, done);
 		});
 
@@ -258,7 +259,27 @@ describe('index.js', () => {
 	});
 
 	describe('boolean', () => {
-		it('should block if false', done => {
+		it('should block if args = false', done => {
+			const fetch = acl.get('model.fetch');
+
+			fetch(false, auth)
+				.subscribe(null, err => {
+					expect(err.statusCode).to.equal(403);
+					expect(err.message).to.equal('ACL refused request');
+					done();
+				});
+		});
+
+		it('should grant if args = null', done => {
+			const fetch = acl.get('model.fetch');
+
+			fetch(null, auth)
+				.subscribe(response => {
+					expect(response).to.be.null;
+				}, null, done);
+		});
+
+		it('should block if role = false', done => {
 			acl.acls = {
 				model: {
 					fetch: {
@@ -277,7 +298,7 @@ describe('index.js', () => {
 				});
 		});
 
-		it('should block if null', done => {
+		it('should block if role = null', done => {
 			acl.acls = {
 				model: {
 					fetch: {
@@ -397,36 +418,7 @@ describe('index.js', () => {
 				});
 		});
 
-		it('should extend args', done => {
-			acl.acls = {
-				model: {
-					fetch: {
-						someRole: {
-							expression: args => _.extend({}, args, {
-								extended: 'extended'
-							})
-						}
-					}
-				}
-			}
-
-			const fetch = acl.get('model.fetch');
-
-			fetch(args, auth)
-				.do(args => {
-					expect(args.extended).to.equal('extended');
-				})
-				.mergeMap(model.fetch.bind(model))
-				.toArray()
-				.subscribe(() => {
-					expect(Model.fetchSpy).to.have.been.calledWith({
-						id: 'someId',
-						extended: 'extended'
-					});
-				}, null, done);
-		});
-
-		it('should replace args', done => {
+		it('should feed args', done => {
 			acl.acls = {
 				model: {
 					fetch: {
@@ -496,6 +488,27 @@ describe('index.js', () => {
 				.toArray()
 				.subscribe(() => {
 					expect(Model.fetchSpy).to.have.been.calledWith(args);
+				}, null, done);
+		});
+
+		it('should grant if condition = null', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							expression: () => null
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith(null);
 				}, null, done);
 		});
 
