@@ -52,7 +52,7 @@ describe('index.js', () => {
 				'model.fetch',
 				'inexistent'
 			]);
-			
+
 			expect(_.size(acl.execute)).to.equal(1);
 			expect(acl.execute.model.fetch).to.be.a('function');
 		});
@@ -137,19 +137,6 @@ describe('index.js', () => {
 					});
 			});
 
-			it('should return 403 if no args', done => {
-				const fetch = acl.get('model.fetch');
-
-				args = null;
-
-				fetch(args, auth)
-					.subscribe(null, err => {
-						expect(err.statusCode).to.equal(403);
-						expect(err.message).to.equal('No args object provided');
-						done();
-					});
-			});
-
 			it('should return 403 if no auth', done => {
 				const fetch = acl.get('model.fetch');
 
@@ -210,6 +197,18 @@ describe('index.js', () => {
 					expect(err.message).to.equal('Inexistent ACL');
 					done();
 				});
+		});
+
+		it('should call boolean with empty object', done => {
+			const fetch = acl.get('model.fetch');
+
+			Observable.forkJoin(
+					fetch(null, auth),
+					fetch(undefined, auth)
+				)
+				.subscribe(() => {
+					expect(acl.boolean).to.have.always.been.calledWith(true, {}, auth);
+				}, null, done);
 		});
 
 		it('should call boolean', done => {

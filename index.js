@@ -41,7 +41,7 @@ module.exports = class Acl {
             rejectSilently: false
         }) => {
             if (_.isNil(args)) {
-                return Observable.throw(createError(403, `No args object provided`));
+                args = {};
             }
 
             if (_.isNil(auth)) {
