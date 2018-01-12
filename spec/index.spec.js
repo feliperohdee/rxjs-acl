@@ -426,6 +426,34 @@ describe('index.js', () => {
 				}, null, done);
 		});
 
+		it('should replace args', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: {
+							expression: () => ({
+								replaced: 'replaced'
+							})
+						}
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth)
+				.do(args => {
+					expect(args.replaced).to.equal('replaced');
+				})
+				.mergeMap(model.fetch.bind(model))
+				.toArray()
+				.subscribe(() => {
+					expect(Model.fetchSpy).to.have.been.calledWith({
+						replaced: 'replaced'
+					});
+				}, null, done);
+		});
+
 		it('should block if condition not satisfied', done => {
 			acl.acls = {
 				model: {

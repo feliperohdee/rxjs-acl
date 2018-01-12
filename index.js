@@ -75,7 +75,7 @@ module.exports = class Acl {
                     }
 
                     return _.extend({}, reduction, args);
-                }, args)
+                }, {})
                 .catch(err => {
                     if (options.rejectSilently) {
                         return Observable.empty();
