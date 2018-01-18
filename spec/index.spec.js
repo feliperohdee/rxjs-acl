@@ -191,7 +191,9 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(args, auth)
+			fetch(args, auth, {
+					onReject: () => new Error('customError')
+				})
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('Inexistent ACL');
@@ -250,7 +252,9 @@ describe('index.js', () => {
 
 			const fetch = acl.get('model.fetch');
 
-			fetch(args, auth)
+			fetch(args, auth, {
+					onReject: () => new Error('customError')
+				})
 				.subscribe(null, err => {
 					expect(err.message).to.equal('Bad ACL: ops...');
 					done();
@@ -313,6 +317,26 @@ describe('index.js', () => {
 				.subscribe(null, err => {
 					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
+					done();
+				});
+		});
+
+		it('should block with custom error', done => {
+			acl.acls = {
+				model: {
+					fetch: {
+						someRole: null
+					}
+				}
+			}
+
+			const fetch = acl.get('model.fetch');
+
+			fetch(args, auth, {
+					onReject: () => new Error('customError')
+				})
+				.subscribe(null, err => {
+					expect(err.message).to.equal('customError');
 					done();
 				});
 		});

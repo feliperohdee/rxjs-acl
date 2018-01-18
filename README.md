@@ -51,6 +51,9 @@ Reactive ACL's based on RxJS
 		
 		const modelAclContext = acl.get('model.fetch');
 		
-		modelAclContext(mockedArgs, mockedAuth)
+		modelAclContext(mockedArgs, mockedAuth, {
+					rejectSilently: boolean,
+					onReject: function
+				})
 				.mergeMap(aclargs => model.fetch(aclargs))
 				.subscribe(nextFn, errFn);

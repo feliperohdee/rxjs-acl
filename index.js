@@ -38,7 +38,8 @@ module.exports = class Acl {
         }
 
         return (args, auth, options = {
-            rejectSilently: false
+            rejectSilently: false,
+            onReject: null
         }) => {
             if (_.isNil(auth)) {
                 return Observable.throw(createError(403, `No auth object provided`));
@@ -75,6 +76,10 @@ module.exports = class Acl {
                 .catch(err => {
                     if (options.rejectSilently) {
                         return Observable.empty();
+                    }
+
+                    if(err.message === `ACL refused request` && _.isFunction(options.onReject)) {
+                        throw options.onReject();
                     }
 
                     throw createError(err.status || 500, err);
