@@ -3,7 +3,6 @@ const sinon = require('sinon');
 const sinonChai = require('sinon-chai');
 
 const _ = require('lodash');
-const createError = require('http-errors');
 const {
 	Observable
 } = require('rxjs');
@@ -131,7 +130,6 @@ describe('index.js', () => {
 
 				fetch(args, auth)
 					.subscribe(null, err => {
-						expect(err.statusCode).to.equal(403);
 						expect(err.message).to.equal('There are no ACL\'s namespace for inexistent.context');
 						done();
 					});
@@ -144,7 +142,6 @@ describe('index.js', () => {
 
 				fetch(args, auth)
 					.subscribe(null, err => {
-						expect(err.statusCode).to.equal(403);
 						expect(err.message).to.equal('No auth object provided');
 						done();
 					});
@@ -157,7 +154,6 @@ describe('index.js', () => {
 
 				fetch(args, auth)
 					.subscribe(null, err => {
-						expect(err.statusCode).to.equal(403);
 						expect(err.message).to.equal('There are no ACL\'s role for model.fetch');
 						done();
 					});
@@ -195,7 +191,6 @@ describe('index.js', () => {
 					onReject: () => new Error('customError')
 				})
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('Inexistent ACL');
 					done();
 				});
@@ -268,7 +263,6 @@ describe('index.js', () => {
 
 			fetch(false, auth)
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
 					done();
 				});
@@ -296,7 +290,6 @@ describe('index.js', () => {
 
 			fetch(args, auth)
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
 					done();
 				});
@@ -315,7 +308,6 @@ describe('index.js', () => {
 
 			fetch(args, auth)
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
 					done();
 				});
@@ -488,7 +480,6 @@ describe('index.js', () => {
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
 					done();
 				});
@@ -541,7 +532,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							expression: args => createError(404, 'Unknown error')
+							expression: args => new Error('Unknown error')
 						}
 					}
 				}
@@ -554,7 +545,6 @@ describe('index.js', () => {
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(404);
 					expect(err.message).to.equal('Unknown error');
 					done();
 				});
@@ -565,7 +555,7 @@ describe('index.js', () => {
 				model: {
 					fetch: {
 						someRole: {
-							expression: args => Observable.throw('Observable throw')
+							expression: args => Observable.throw(new Error('Observable throw'))
 						}
 					}
 				}
@@ -576,7 +566,6 @@ describe('index.js', () => {
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(500);
 					expect(err.message).to.equal('Observable throw');
 					done();
 				});
@@ -598,7 +587,6 @@ describe('index.js', () => {
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
 				.subscribe(null, err => {
-					expect(err.statusCode).to.equal(403);
 					expect(err.message).to.equal('ACL refused request');
 					done();
 				});

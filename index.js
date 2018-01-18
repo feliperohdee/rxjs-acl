@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const createError = require('http-errors');
 const {
     Observable
 } = require('rxjs');
@@ -34,7 +33,7 @@ module.exports = class Acl {
         const aclNamespace = _.get(this.acls, namespace, false);
 
         if (!aclNamespace) {
-            return () => Observable.throw(createError(403, `There are no ACL's namespace for ${namespace}`));
+            return () => Observable.throw(new Error(`There are no ACL's namespace for ${namespace}`));
         }
 
         return (args, auth, options = {
@@ -42,14 +41,14 @@ module.exports = class Acl {
             onReject: null
         }) => {
             if (_.isNil(auth)) {
-                return Observable.throw(createError(403, `No auth object provided`));
+                return Observable.throw(new Error(`No auth object provided`));
             }
 
             let operation;
             let acl = this.resolveRole(aclNamespace, auth.role);
 
             if (_.isUndefined(acl)) {
-                return Observable.throw(createError(403, `There are no ACL's role for ${namespace}`));
+                return Observable.throw(new Error(`There are no ACL's role for ${namespace}`));
             }
 
             if (_.isBoolean(acl) || _.isNull(acl)) {
@@ -68,7 +67,7 @@ module.exports = class Acl {
                 ]) => this.handle(type, acl, args, auth))
                 .reduce((reduction, args) => {
                     if(args === false){
-                        throw createError(403, `ACL refused request`);
+                        throw options.onReject ? options.onReject() : new Error(`ACL refused request`);
                     }
 
                     return _.isObject(args) ? _.extend({}, reduction, args) : args;
@@ -78,24 +77,20 @@ module.exports = class Acl {
                         return Observable.empty();
                     }
 
-                    if(err.message === `ACL refused request` && _.isFunction(options.onReject)) {
-                        throw options.onReject();
-                    }
-
-                    throw createError(err.status || 500, err);
+                    throw err;
                 });
         }
     }
 
     handle(type, acl, args, auth) {
         if (_.isNil(this[type])) {
-            throw createError(403, 'Inexistent ACL');
+            throw new Error('Inexistent ACL');
         }
 
         try {
             return this[type](acl, args, auth);
         } catch (err) {
-            throw createError(403, `Bad ACL: ${err.message}`);
+            throw new Error(`Bad ACL: ${err.message}`);
         }
     }
 
@@ -119,7 +114,7 @@ module.exports = class Acl {
 
         return result.map(result => {
             if (result instanceof Error) {
-                throw createError(result);
+                throw result;
             }
 
             return result;
