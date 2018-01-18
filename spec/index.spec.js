@@ -538,8 +538,6 @@ describe('index.js', () => {
 				}
 			}
 
-			auth.id = 'wrongId';
-
 			const fetch = acl.get('model.fetch');
 
 			fetch(args, auth)
@@ -550,7 +548,7 @@ describe('index.js', () => {
 				});
 		});
 
-		it('should handle observable throwing and ensure that error is wrapped around http.error', done => {
+		it('should handle observable throwing', done => {
 			acl.acls = {
 				model: {
 					fetch: {
@@ -571,7 +569,7 @@ describe('index.js', () => {
 				});
 		});
 
-		it('should handle observable rejecting and ensure that error is wrapped around http.error', done => {
+		it('should handle observable rejecting', done => {
 			acl.acls = {
 				model: {
 					fetch: {
