@@ -49,7 +49,7 @@ Reactive ACL's based on RxJS
 			model
 		});
 		
-		const modelAclContext = acl.get('model.fetch');
+		const modelAclContext = acl.factory('model.fetch');
 		
 		modelAclContext(mockedArgs, mockedAuth, {
 					rejectSilently: boolean,

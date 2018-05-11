@@ -7,12 +7,11 @@ module.exports = class Acl {
     constructor(acls, context, factory) {
         this.acls = acls;
         this.context = context;
-
-        this.execute = _.reduce(factory, (reduction, key) => {
-            const acl = _.get(this.acls, key, null);
+        this.execute = _.reduce(factory, (reduction, namespace) => {
+            const acl = _.get(this.acls, namespace, null);
 
             if(acl) {
-                reduction = _.set(reduction, key, this.get(key));
+                reduction = _.set(reduction, namespace, this.factory(namespace));
             }
 
             return reduction;
@@ -29,7 +28,7 @@ module.exports = class Acl {
         return _.get(aclNamespace, role);
     }
 
-    get(namespace) {
+    factory(namespace) {
         const aclNamespace = _.get(this.acls, namespace, false);
 
         if (!aclNamespace) {

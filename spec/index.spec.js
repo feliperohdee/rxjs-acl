@@ -83,7 +83,7 @@ describe('index.js', () => {
 		});
 	});
 
-	describe('get', () => {
+	describe('factory', () => {
 		beforeEach(() => {
 			sinon.stub(acl, 'handle')
 				.returns(Observable.of(true));
@@ -96,7 +96,7 @@ describe('index.js', () => {
 		it('should call handle with single level', done => {
 			acl.acls = acl.acls.model;
 
-			const fetch = acl.get('fetch');
+			const fetch = acl.factory('fetch');
 
 			fetch(args, auth)
 				.subscribe(() => {
@@ -105,7 +105,7 @@ describe('index.js', () => {
 		});
 
 		it('should call handle with 2 levels', done => {
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.subscribe(() => {
@@ -116,7 +116,7 @@ describe('index.js', () => {
 		it('should call handle with 3 levels or more', done => {
 			acl.acls.main = acl.acls;
 
-			const fetch = acl.get('main.model.fetch');
+			const fetch = acl.factory('main.model.fetch');
 
 			fetch(args, auth)
 				.subscribe(() => {
@@ -126,7 +126,7 @@ describe('index.js', () => {
 
 		describe('no ACL context, no ACL role, wrong ACL', () => {
 			it('should return 403 if no ACL context', done => {
-				const fetch = acl.get('inexistent.context');
+				const fetch = acl.factory('inexistent.context');
 
 				fetch(args, auth)
 					.subscribe(null, err => {
@@ -136,7 +136,7 @@ describe('index.js', () => {
 			});
 
 			it('should return 403 if no auth', done => {
-				const fetch = acl.get('model.fetch');
+				const fetch = acl.factory('model.fetch');
 
 				auth = null;
 
@@ -148,7 +148,7 @@ describe('index.js', () => {
 			});
 
 			it('should return 403 if no ACL role', done => {
-				const fetch = acl.get('model.fetch');
+				const fetch = acl.factory('model.fetch');
 
 				auth.role = 'forbiddenRole';
 
@@ -185,7 +185,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth, {
 					onReject: () => new Error('customError')
@@ -197,7 +197,7 @@ describe('index.js', () => {
 		});
 
 		it('should call boolean with empty object', done => {
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			Observable.forkJoin(
 					fetch(null, auth),
@@ -210,7 +210,7 @@ describe('index.js', () => {
 		});
 
 		it('should call boolean', done => {
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.subscribe(() => {
@@ -231,7 +231,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.subscribe(() => {
@@ -245,7 +245,7 @@ describe('index.js', () => {
 			sinon.stub(acl, 'boolean')
 				.throws(new Error('ops...'));
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth, {
 					onReject: () => new Error('customError')
@@ -259,7 +259,7 @@ describe('index.js', () => {
 
 	describe('boolean', () => {
 		it('should block if args = false', done => {
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(false, auth)
 				.subscribe(null, err => {
@@ -269,7 +269,7 @@ describe('index.js', () => {
 		});
 
 		it('should grant if args = null', done => {
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(null, auth)
 				.subscribe(response => {
@@ -286,7 +286,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.subscribe(null, err => {
@@ -304,7 +304,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.subscribe(null, err => {
@@ -322,7 +322,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth, {
 					onReject: () => new Error('customError')
@@ -342,7 +342,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth, {
 					rejectSilently: true
@@ -360,7 +360,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -383,7 +383,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -402,7 +402,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -423,7 +423,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -447,7 +447,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.do(args => {
@@ -475,7 +475,7 @@ describe('index.js', () => {
 
 			auth.id = 'wrongId';
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -496,7 +496,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -517,7 +517,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -538,7 +538,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -559,7 +559,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -580,7 +580,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -601,7 +601,7 @@ describe('index.js', () => {
 				}
 			}
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.mergeMap(model.fetch.bind(model))
@@ -627,7 +627,7 @@ describe('index.js', () => {
 				}
 			};
 
-			const fetch = acl.get('model.fetch');
+			const fetch = acl.factory('model.fetch');
 
 			fetch(args, auth)
 				.do(aclArgs => {

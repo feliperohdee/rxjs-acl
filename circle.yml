@@ -1,6 +1,6 @@
 machine:
   node:
-    version: 8.8.1
+    version: 9.2.0
 test:
   override:
     - npm run coverage
