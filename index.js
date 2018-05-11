@@ -4,35 +4,41 @@ const {
 } = require('rxjs');
 
 module.exports = class Acl {
-    constructor(acls, context, factory) {
+    constructor(acls, context, executors = true) {
+        const customExecutors = _.isArray(executors);
+
         this.acls = acls;
         this.context = context;
-        this.execute = _.reduce(factory, (reduction, namespace) => {
-            const acl = _.get(this.acls, namespace, null);
+        this.execute = executors ? _.reduce(customExecutors ? executors : acls, (reduction, value, key) => {
+            if(customExecutors) {
+                key = value;
+            }
+
+            const acl = _.get(this.acls, key);
 
             if(acl) {
-                reduction = _.set(reduction, namespace, this.factory(namespace));
+                reduction = _.set(reduction, key, this.factory(key));
             }
 
             return reduction;
-        }, {});
+        }, {}) : {};
     }
 
-    resolveRole(aclNamespace, role){
+    resolveRole(aclKey, role){
         if(_.isArray(role)){
-            const acls = _.values(_.pick(aclNamespace, role));
+            const acls = _.values(_.pick(aclKey, role));
             
             return _.first(acls);
         }
 
-        return _.get(aclNamespace, role);
+        return _.get(aclKey, role);
     }
 
-    factory(namespace) {
-        const aclNamespace = _.get(this.acls, namespace, false);
+    factory(key) {
+        const aclKey = _.get(this.acls, key, false);
 
-        if (!aclNamespace) {
-            return () => Observable.throw(new Error(`There are no ACL's namespace for ${namespace}`));
+        if (!aclKey) {
+            return () => Observable.throw(new Error(`There are no ACL's for ${key}`));
         }
 
         return (args, auth, options = {
@@ -44,10 +50,10 @@ module.exports = class Acl {
             }
 
             let operation;
-            let acl = this.resolveRole(aclNamespace, auth.role);
+            let acl = this.resolveRole(aclKey, auth.role);
 
             if (_.isUndefined(acl)) {
-                return Observable.throw(new Error(`There are no ACL's role for ${namespace}`));
+                return Observable.throw(new Error(`There are no ACL's role for ${key}`));
             }
 
             if (_.isBoolean(acl) || _.isNull(acl)) {

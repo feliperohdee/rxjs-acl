@@ -22,26 +22,23 @@ Reactive ACL's based on RxJS
 		};
 
 		const aclRules = {
-			// context
-			model: {
-				// method or operation
-				fetch: {
-					// roles
-					public: {
-						expression: (args, auth, context) => {
-							// ensure auth.id
-							if(!auth.id){
-								return false;	
-							}
-							
-							// can return an Observable, confirming user existence for example
-							return context.model.get(auth.id)
-									.map(response => !!response);
+			// context, method or operation
+			fetch: {
+				// roles
+				public: {
+					expression: (args, auth, context) => {
+						// ensure auth.id
+						if(!auth.id){
+							return false;	
 						}
-					},
-					admin: true // grant free access,
-					unpredictable: false // block all access
-				}
+						
+						// can return an Observable, confirming user existence for example
+						return context.model.get(auth.id)
+								.map(response => !!response);
+					}
+				},
+				admin: true // grant free access,
+				unpredictable: false // block all access
 			}
 		};
 
@@ -49,9 +46,7 @@ Reactive ACL's based on RxJS
 			model
 		});
 		
-		const modelAclContext = acl.factory('model.fetch');
-		
-		modelAclContext(mockedArgs, mockedAuth, {
+		acl.execute.fetch(mockedArgs, mockedAuth, {
 					rejectSilently: boolean,
 					onReject: function
 				})
