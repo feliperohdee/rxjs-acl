@@ -4,19 +4,20 @@ const {
 } = require('rxjs');
 
 module.exports = class Acl {
-    constructor(acls, context, executors = true) {
+    constructor(acls, context, executors = true, rootAccess = null) {
         const customExecutors = _.isArray(executors);
 
         this.acls = acls;
         this.context = context;
+        this.rootAccess = rootAccess;
         this.execute = executors ? _.reduce(customExecutors ? executors : acls, (reduction, value, key) => {
-            if(customExecutors) {
+            if (customExecutors) {
                 key = value;
             }
 
             const acl = _.get(this.acls, key);
 
-            if(acl) {
+            if (acl) {
                 reduction = _.set(reduction, key, this.factory(key));
             }
 
@@ -24,10 +25,10 @@ module.exports = class Acl {
         }, {}) : {};
     }
 
-    resolveRole(aclKey, role){
-        if(_.isArray(role)){
+    resolveRole(aclKey, role) {
+        if (_.isArray(role)) {
             const acls = _.values(_.pick(aclKey, role));
-            
+
             return _.first(acls);
         }
 
@@ -50,7 +51,7 @@ module.exports = class Acl {
             }
 
             let operation;
-            let acl = this.resolveRole(aclKey, auth.role);
+            let acl = (this.rootAccess && this.rootAccess === auth.role) ? true : this.resolveRole(aclKey, auth.role);
 
             if (_.isUndefined(acl)) {
                 return Observable.throw(new Error(`There are no ACL's role for ${key}`));
@@ -69,9 +70,11 @@ module.exports = class Acl {
                 .mergeMap(([
                     type,
                     acl
-                ]) => this.handle(type, acl, args, auth))
+                ]) => {
+                    return this.handle(type, acl, args, auth);
+                })
                 .reduce((reduction, args) => {
-                    if(args === false){
+                    if (args === false) {
                         throw options.onReject ? options.onReject() : new Error(`ACL refused request`);
                     }
 

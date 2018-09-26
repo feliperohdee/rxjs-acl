@@ -27,9 +27,9 @@ describe('index.js', () => {
         });
 
         acl.acls = _.clone({
-			fetch: {
-				someRole: true
-			}
+            fetch: {
+                someRole: true
+            }
         }, true);
 
         args = {
@@ -45,7 +45,7 @@ describe('index.js', () => {
 
     describe('constructor', () => {
         it('should create executors', () => {
-			acl = new Acl(acl.acls);
+            acl = new Acl(acl.acls);
 
             expect(_.size(acl.execute)).to.equal(1);
             expect(acl.execute.fetch).to.be.a('function');
@@ -55,20 +55,20 @@ describe('index.js', () => {
             acl = new Acl(acl.acls, {}, false);
 
             expect(_.size(acl.execute)).to.equal(0);
-		});
-		
-		it('should create custom executors', () => {
-			acl.acls.l0 = {
-                l1: acl.acls
-			};
-			
-			acl = new Acl(acl.acls, {}, [
-				'l0.l1.fetch',
-				'inexistent'
-			]);
+        });
 
-			expect(_.size(acl.execute)).to.equal(1);
-			expect(acl.execute.l0.l1.fetch).to.be.a('function');
+        it('should create custom executors', () => {
+            acl.acls.l0 = {
+                l1: acl.acls
+            };
+
+            acl = new Acl(acl.acls, {}, [
+                'l0.l1.fetch',
+                'inexistent'
+            ]);
+
+            expect(_.size(acl.execute)).to.equal(1);
+            expect(acl.execute.l0.l1.fetch).to.be.a('function');
         });
     });
 
@@ -134,6 +134,18 @@ describe('index.js', () => {
             };
 
             const fetch = acl.factory('l0.l1.fetch');
+
+            fetch(args, auth)
+                .subscribe(() => {
+                    expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
+                }, null, done);
+        });
+
+        it('should call handle with rootAccess', done => {
+            const fetch = acl.factory('fetch');
+            
+            acl.rootAccess = 'root';
+            auth.role = 'root';
 
             fetch(args, auth)
                 .subscribe(() => {
