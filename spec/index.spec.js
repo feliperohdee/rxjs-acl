@@ -141,7 +141,7 @@ describe('index.js', () => {
                 }, null, done);
         });
 
-        it.only('should call handle with rootAccess', done => {
+        it('should call handle with rootAccess', done => {
             const fetch = acl.factory('fetch');
             
             auth.role = `root-${process.pid}`;
