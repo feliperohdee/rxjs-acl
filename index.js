@@ -4,7 +4,7 @@ const {
 } = require('rxjs');
 
 module.exports = class Acl {
-    constructor(acls, context, executors = true, rootAccess = null) {
+    constructor(acls, context, executors = true, rootAccess = `root-${process.pid}`) {
         const customExecutors = _.isArray(executors);
 
         this.acls = acls;
