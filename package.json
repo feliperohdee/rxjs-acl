@@ -1,6 +1,6 @@
 {
   "name": "smallorange-acl",
-  "version": "1.1.15",
+  "version": "1.1.16",
   "description": "Reactive ACL's based on RxJS",
   "main": "index.js",
   "scripts": {
