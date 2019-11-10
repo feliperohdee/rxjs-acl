@@ -1,12 +1,10 @@
-[![CircleCI](https://circleci.com/gh/feliperohdee/smallorange-acl.svg?style=svg)](https://circleci.com/gh/feliperohdee/smallorange-acl)
-
-# Small Orange ACL
+# RxJS ACL
 
 Reactive ACL's based on RxJS
 
 ## Usage
 
-		const Acl = require('smallorange-acl');
+		const Acl = require('rxjs-acl');
 		const = new Model();
 
 		const mockedArgs = {

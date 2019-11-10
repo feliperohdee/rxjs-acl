@@ -1,21 +1,19 @@
 const sinon = require('sinon');
 
 const _ = require('lodash');
-const {
-	Observable
-} = require('rxjs');
+const rx = require('rxjs');
 
 class Model {
 	fetch(params) {
 		Model.fetchSpy(params);
 
-		return Observable.from(_.range(10));
+		return rx.from(_.range(10));
 	}
 
 	get(params) {
 		Model.getSpy(params);
 
-		return Observable.of(1);
+		return rx.of(1);
 	}
 }
 

@@ -1,7 +1,6 @@
 const _ = require('lodash');
-const {
-    Observable
-} = require('rxjs');
+const rx = require('rxjs');
+const rxop = require('rxjs/operators');
 
 module.exports = class Acl {
     constructor(acls, context, executors = true, rootAccess = `root-${process.pid}`) {
@@ -39,7 +38,7 @@ module.exports = class Acl {
         const aclKey = _.get(this.acls, key, false);
 
         if (!aclKey) {
-            return () => Observable.throw(new Error(`There are no ACL's for ${key}`));
+            return () => rx.throwError(new Error(`There are no ACL's for ${key}`));
         }
 
         return (args, auth, options = {
@@ -47,47 +46,48 @@ module.exports = class Acl {
             onReject: null
         }) => {
             if (_.isNil(auth)) {
-                return Observable.throw(new Error(`No auth object provided`));
+                return rx.throwError(new Error(`No auth object provided`));
             }
 
             let operation;
             let acl = (this.rootAccess && this.rootAccess === auth.role) ? true : this.resolveRole(aclKey, auth.role);
 
             if (_.isUndefined(acl)) {
-                return Observable.throw(new Error(`There are no ACL's role for ${key}`));
+                return rx.throwError(new Error(`There are no ACL's role for ${key}`));
             }
 
             if (_.isBoolean(acl) || _.isNull(acl)) {
-                operation = Observable.of(['boolean', acl]);
+                operation = rx.of(['boolean', acl]);
             } else if (_.isFunction(acl)) {
-                operation = Observable.of(['expression', acl]);
+                operation = rx.of(['expression', acl]);
             } else {
-                operation = Observable.pairs(acl);
+                operation = rx.pairs(acl);
             }
 
             // handle args
-            return operation
-                .mergeMap(([
+            return operation.pipe(
+                rxop.mergeMap(([
                     type,
                     acl
                 ]) => {
                     return this.handle(type, acl, args, auth);
-                })
-                .reduce((reduction, args) => {
+                }),
+                rxop.reduce((reduction, args) => {
                     if (args === false) {
                         throw options.onReject ? options.onReject() : new Error(`ACL refused request`);
                     }
 
                     return _.isObject(args) ? _.extend({}, reduction, args) : args;
-                }, {})
-                .catch(err => {
+                }, {}),
+                rxop.catchError(err => {
                     if (options.rejectSilently) {
-                        return Observable.empty();
+                        return rx.empty();
                     }
 
                     throw err;
-                });
-        }
+                })
+            );
+        };
     }
 
     handle(type, acl, args, auth) {
@@ -103,29 +103,25 @@ module.exports = class Acl {
     }
 
     boolean(acl, args) {
-        return acl ? Observable.of(args) : Observable.of(false);
+        return acl ? rx.of(args) : rx.of(false);
     }
 
     expression(expression, args, auth) {
-        let result;
-
-        try {
-            result = expression(args, auth, this.context);
-        } catch (err) {
-            throw err;
-        }
+        let result = expression(args, auth, this.context);
 
         // wrap into an observable if not yet
-        if (!(result instanceof Observable)) {
-            result = Observable.of(result);
+        if (!(result instanceof rx.Observable)) {
+            result = rx.of(result);
         }
 
-        return result.map(result => {
-            if (result instanceof Error) {
-                throw result;
-            }
-
-            return result;
-        });
+        return result.pipe(
+            rxop.map(result => {
+                if (result instanceof Error) {
+                    throw result;
+                }
+    
+                return result;
+            })
+        );
     }
-}
+};

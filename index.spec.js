@@ -3,12 +3,11 @@ const sinon = require('sinon');
 const sinonChai = require('sinon-chai');
 
 const _ = require('lodash');
-const {
-    Observable
-} = require('rxjs');
+const rx = require('rxjs');
+const rxop = require('rxjs/operators');
 
-const Model = require('../testing/Model');
-const Acl = require('../');
+const Model = require('./testing/Model');
+const Acl = require('./');
 
 const expect = chai.expect;
 
@@ -101,7 +100,7 @@ describe('index.js', () => {
     describe('factory', () => {
         beforeEach(() => {
             sinon.stub(acl, 'handle')
-                .returns(Observable.of(true));
+                .returns(rx.of(true));
         });
 
         afterEach(() => {
@@ -143,7 +142,7 @@ describe('index.js', () => {
 
         it('should call handle with rootAccess', done => {
             const fetch = acl.factory('fetch');
-            
+
             auth.role = `root-${process.pid}`;
 
             fetch(args, auth)
@@ -192,9 +191,9 @@ describe('index.js', () => {
     describe('handle', () => {
         beforeEach(() => {
             sinon.stub(acl, 'boolean')
-                .returns(Observable.of(true));
+                .returns(rx.of(true));
             sinon.stub(acl, 'expression')
-                .returns(Observable.of(true));
+                .returns(rx.of(true));
         });
 
         afterEach(() => {
@@ -209,7 +208,7 @@ describe('index.js', () => {
                         __expression: args => args.id = 'enforcedId'
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
@@ -225,7 +224,7 @@ describe('index.js', () => {
         it('should call boolean with empty object', done => {
             const fetch = acl.factory('fetch');
 
-            Observable.forkJoin(
+            rx.forkJoin(
                     fetch(null, auth),
                     fetch(undefined, auth)
                 )
@@ -253,7 +252,7 @@ describe('index.js', () => {
                         expression
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
@@ -306,7 +305,7 @@ describe('index.js', () => {
                 fetch: {
                     someRole: false
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
@@ -322,7 +321,7 @@ describe('index.js', () => {
                 fetch: {
                     someRole: null
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
@@ -338,7 +337,7 @@ describe('index.js', () => {
                 fetch: {
                     someRole: null
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
@@ -356,7 +355,7 @@ describe('index.js', () => {
                 fetch: {
                     someRole: null
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
@@ -366,19 +365,20 @@ describe('index.js', () => {
                 .subscribe(null, null, done);
         });
 
-
         it('should grant if true', done => {
             acl.acls = {
                 fetch: {
                     someRole: true
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
                 }, null, done);
@@ -393,13 +393,15 @@ describe('index.js', () => {
                         expression: (args, auth, context) => !!(args && auth && context.model instanceof Model)
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
                 }, null, done);
@@ -410,13 +412,15 @@ describe('index.js', () => {
                 fetch: {
                     someRole: (args, auth, context) => !!(args && auth && context.model instanceof Model)
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
                 }, null, done);
@@ -429,13 +433,15 @@ describe('index.js', () => {
                         throw new Error('error');
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('Bad ACL: error');
                     done();
@@ -451,16 +457,18 @@ describe('index.js', () => {
                         })
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .do(args => {
-                    expect(args.replaced).to.equal('replaced');
-                })
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.tap(args => {
+                        expect(args.replaced).to.equal('replaced');
+                    }),
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith({
                         replaced: 'replaced'
@@ -475,14 +483,16 @@ describe('index.js', () => {
                         expression: args => args.id === auth.id
                     }
                 }
-            }
+            };
 
             auth.id = 'wrongId';
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model))
+                )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('ACL refused request');
                     done();
@@ -496,13 +506,15 @@ describe('index.js', () => {
                         expression: args => args.id === auth.id
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
                 }, null, done);
@@ -515,13 +527,15 @@ describe('index.js', () => {
                         expression: () => null
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(null);
                 }, null, done);
@@ -534,12 +548,14 @@ describe('index.js', () => {
                         expression: args => new Error('Unknown error')
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model))
+                )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('Unknown error');
                     done();
@@ -550,15 +566,17 @@ describe('index.js', () => {
             acl.acls = {
                 fetch: {
                     someRole: {
-                        expression: args => Observable.throw(new Error('Observable throw'))
+                        expression: args => rx.throwError(new Error('Observable throw'))
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model))
+                )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('Observable throw');
                     done();
@@ -569,15 +587,17 @@ describe('index.js', () => {
             acl.acls = {
                 fetch: {
                     someRole: {
-                        expression: args => Observable.of(false)
+                        expression: args => rx.of(false)
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model))
+                )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('ACL refused request');
                     done();
@@ -588,16 +608,18 @@ describe('index.js', () => {
             acl.acls = {
                 fetch: {
                     someRole: {
-                        expression: args => Observable.of(true)
+                        expression: args => rx.of(true)
                     }
                 }
-            }
+            };
 
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                .pipe(
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
                 }, null, done);
@@ -620,13 +642,15 @@ describe('index.js', () => {
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .do(aclArgs => {
-                    expect(aclArgs.id).to.equal('enforcedId');
+                .pipe(
+                    rxop.tap(aclArgs => {
+                        expect(aclArgs.id).to.equal('enforcedId');
 
-                    args = aclArgs;
-                })
-                .mergeMap(model.fetch.bind(model))
-                .toArray()
+                        args = aclArgs;
+                    }),
+                    rxop.mergeMap(model.fetch.bind(model)),
+                    rxop.toArray()
+                )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
                 }, null, done);
