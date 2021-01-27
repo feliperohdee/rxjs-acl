@@ -2,6 +2,7 @@ module.exports = {
     catchError: require('rxjs/internal/operators/catchError').catchError,
     empty: require('rxjs/internal/observable/empty').empty,
     forkJoin: require('rxjs/internal/observable/forkJoin').forkJoin,
+    from: require('rxjs/internal/observable/from').from,
     map: require('rxjs/internal/operators/map').map,
     mergeMap: require('rxjs/internal/operators/mergeMap').mergeMap,
     Observable: require('rxjs/internal/Observable').Observable,

@@ -2,8 +2,7 @@ const chai = require('chai');
 const sinon = require('sinon');
 const sinonChai = require('sinon-chai');
 
-const _ = require('lodash');
-
+const _ = require('./lodash');
 const Model = require('./testing/Model');
 const Acl = require('./');
 const rx = require('./rx');
