@@ -1,6 +1,6 @@
 {
     "name": "rxjs-acl",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Reactive ACL's based on RxJS",
     "main": "index.js",
     "scripts": {
