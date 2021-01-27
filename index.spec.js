@@ -3,11 +3,10 @@ const sinon = require('sinon');
 const sinonChai = require('sinon-chai');
 
 const _ = require('lodash');
-const rx = require('rxjs');
-const rxop = require('rxjs/operators');
 
 const Model = require('./testing/Model');
 const Acl = require('./');
+const rx = require('./rx');
 
 const expect = chai.expect;
 
@@ -376,8 +375,8 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
@@ -399,8 +398,8 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
@@ -418,8 +417,8 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
@@ -439,8 +438,8 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('Bad ACL: error');
@@ -463,11 +462,11 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.tap(args => {
+                    rx.tap(args => {
                         expect(args.replaced).to.equal('replaced');
                     }),
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith({
@@ -491,7 +490,7 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model))
+                    rx.mergeMap(model.fetch.bind(model))
                 )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('ACL refused request');
@@ -512,8 +511,8 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
@@ -533,8 +532,8 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(null);
@@ -554,7 +553,7 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model))
+                    rx.mergeMap(model.fetch.bind(model))
                 )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('Unknown error');
@@ -575,7 +574,7 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model))
+                    rx.mergeMap(model.fetch.bind(model))
                 )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('Observable throw');
@@ -596,7 +595,7 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model))
+                    rx.mergeMap(model.fetch.bind(model))
                 )
                 .subscribe(null, err => {
                     expect(err.message).to.equal('ACL refused request');
@@ -617,8 +616,8 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
@@ -643,13 +642,13 @@ describe('index.js', () => {
 
             fetch(args, auth)
                 .pipe(
-                    rxop.tap(aclArgs => {
+                    rx.tap(aclArgs => {
                         expect(aclArgs.id).to.equal('enforcedId');
 
                         args = aclArgs;
                     }),
-                    rxop.mergeMap(model.fetch.bind(model)),
-                    rxop.toArray()
+                    rx.mergeMap(model.fetch.bind(model)),
+                    rx.toArray()
                 )
                 .subscribe(() => {
                     expect(Model.fetchSpy).to.have.been.calledWith(args);
