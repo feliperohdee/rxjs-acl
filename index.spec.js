@@ -3,9 +3,9 @@ const sinon = require('sinon');
 const sinonChai = require('sinon-chai');
 
 const _ = require('./lodash');
-const Model = require('./testing/Model');
 const Acl = require('./');
 const rx = require('./rx');
+const testing = require('./testing');
 
 const expect = chai.expect;
 
@@ -18,7 +18,7 @@ describe('index.js', () => {
     let auth;
 
     beforeEach(() => {
-        model = new Model();
+        model = new testing.Model();
         acl = new Acl({}, {
             model
         });
@@ -109,9 +109,9 @@ describe('index.js', () => {
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .subscribe(() => {
+                .subscribe(testing.rx(() => {
                     expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
-                }, null, done);
+                }, null, done));
         });
 
         it('should call handle with 2 levels', done => {
@@ -120,9 +120,9 @@ describe('index.js', () => {
             const fetch = acl.factory('l0.fetch');
 
             fetch(args, auth)
-                .subscribe(() => {
+                .subscribe(testing.rx(() => {
                     expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
-                }, null, done);
+                }, null, done));
         });
 
         it('should call handle with 3 levels or more', done => {
@@ -133,9 +133,9 @@ describe('index.js', () => {
             const fetch = acl.factory('l0.l1.fetch');
 
             fetch(args, auth)
-                .subscribe(() => {
+                .subscribe(testing.rx(() => {
                     expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
-                }, null, done);
+                }, null, done));
         });
 
         it('should call handle with rootAccess', done => {
@@ -144,9 +144,9 @@ describe('index.js', () => {
             auth.role = `root-${process.pid}`;
 
             fetch(args, auth)
-                .subscribe(() => {
+                .subscribe(testing.rx(() => {
                     expect(acl.handle).to.have.been.calledWith('boolean', true, args, auth);
-                }, null, done);
+                }, null, done));
         });
 
         describe('no ACL context, no ACL role, wrong ACL', () => {
@@ -154,10 +154,9 @@ describe('index.js', () => {
                 const fetch = acl.factory('inexistent.context');
 
                 fetch(args, auth)
-                    .subscribe(null, err => {
+                    .subscribe(null, testing.rx(err => {
                         expect(err.message).to.equal('There are no ACL\'s for inexistent.context');
-                        done();
-                    });
+                    }, null, done));
             });
 
             it('should return error if no auth', done => {
@@ -166,10 +165,9 @@ describe('index.js', () => {
                 auth = null;
 
                 fetch(args, auth)
-                    .subscribe(null, err => {
+                    .subscribe(null, testing.rx(err => {
                         expect(err.message).to.equal('No auth object provided');
-                        done();
-                    });
+                    }, null, done));
             });
 
             it('should return error if no ACL role', done => {
@@ -178,10 +176,9 @@ describe('index.js', () => {
                 auth.role = 'forbiddenRole';
 
                 fetch(args, auth)
-                    .subscribe(null, err => {
+                    .subscribe(null, testing.rx(err => {
                         expect(err.message).to.equal('There are no ACL\'s role for fetch');
-                        done();
-                    });
+                    }, null, done));
             });
         });
     });
@@ -213,10 +210,9 @@ describe('index.js', () => {
             fetch(args, auth, {
                     onReject: () => new Error('customError')
                 })
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('Inexistent ACL');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should call boolean with empty object', done => {
@@ -226,19 +222,19 @@ describe('index.js', () => {
                     fetch(null, auth),
                     fetch(undefined, auth)
                 )
-                .subscribe(() => {
+                .subscribe(testing.rx(() => {
                     expect(acl.boolean).to.have.been.calledWith(true, null, auth);
                     expect(acl.boolean).to.have.been.calledWith(true, undefined, auth);
-                }, null, done);
+                }, null, done));
         });
 
         it('should call boolean', done => {
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .subscribe(() => {
+                .subscribe(testing.rx(() => {
                     expect(acl.boolean).to.have.been.calledWith(true, args, auth);
-                }, null, done);
+                }, null, done));
         });
 
         it('should call expression', done => {
@@ -255,9 +251,9 @@ describe('index.js', () => {
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .subscribe(() => {
+                .subscribe(testing.rx(() => {
                     expect(acl.expression).to.have.been.calledWith(expression, args, auth);
-                }, null, done);
+                }, null, done));
         });
 
         it('should handle exception', done => {
@@ -271,10 +267,9 @@ describe('index.js', () => {
             fetch(args, auth, {
                     onReject: () => new Error('customError')
                 })
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('Bad ACL: ops...');
-                    done();
-                });
+                }, null, done));
         });
     });
 
@@ -283,19 +278,18 @@ describe('index.js', () => {
             const fetch = acl.factory('fetch');
 
             fetch(false, auth)
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('ACL refused request');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should grant if args = null', done => {
             const fetch = acl.factory('fetch');
 
             fetch(null, auth)
-                .subscribe(response => {
+                .subscribe(testing.rx(response => {
                     expect(response).to.be.null;
-                }, null, done);
+                }, null, done));
         });
 
         it('should block if role = false', done => {
@@ -308,10 +302,9 @@ describe('index.js', () => {
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('ACL refused request');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should block if role = null', done => {
@@ -324,10 +317,9 @@ describe('index.js', () => {
             const fetch = acl.factory('fetch');
 
             fetch(args, auth)
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('ACL refused request');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should block with custom error', done => {
@@ -342,10 +334,9 @@ describe('index.js', () => {
             fetch(args, auth, {
                     onReject: () => new Error('customError')
                 })
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('customError');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should block silently', done => {
@@ -377,9 +368,9 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith(args);
-                }, null, done);
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith(args);
+                }, null, done));
         });
     });
 
@@ -388,7 +379,7 @@ describe('index.js', () => {
             acl.acls = {
                 fetch: {
                     someRole: {
-                        expression: (args, auth, context) => !!(args && auth && context.model instanceof Model)
+                        expression: (args, auth, context) => !!(args && auth && context.model instanceof testing.Model)
                     }
                 }
             };
@@ -400,15 +391,15 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith(args);
-                }, null, done);
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith(args);
+                }, null, done));
         });
 
         it('should handle implicit expression', done => {
             acl.acls = {
                 fetch: {
-                    someRole: (args, auth, context) => !!(args && auth && context.model instanceof Model)
+                    someRole: (args, auth, context) => !!(args && auth && context.model instanceof testing.Model)
                 }
             };
 
@@ -419,9 +410,9 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith(args);
-                }, null, done);
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith(args);
+                }, null, done));
         });
 
         it('should handle expression exception', done => {
@@ -440,10 +431,9 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('Bad ACL: error');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should feed args', done => {
@@ -467,11 +457,11 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith({
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith({
                         replaced: 'replaced'
                     });
-                }, null, done);
+                }, null, done));
         });
 
         it('should block if condition not satisfied', done => {
@@ -491,10 +481,9 @@ describe('index.js', () => {
                 .pipe(
                     rx.mergeMap(model.fetch.bind(model))
                 )
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('ACL refused request');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should grant if condition satisfied', done => {
@@ -513,9 +502,9 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith(args);
-                }, null, done);
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith(args);
+                }, null, done));
         });
 
         it('should grant if condition = null', done => {
@@ -534,9 +523,9 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith(null);
-                }, null, done);
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith(null);
+                }, null, done));
         });
 
         it('should block with custom error if returns an error', done => {
@@ -554,10 +543,9 @@ describe('index.js', () => {
                 .pipe(
                     rx.mergeMap(model.fetch.bind(model))
                 )
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('Unknown error');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should handle observable throwing', done => {
@@ -575,10 +563,9 @@ describe('index.js', () => {
                 .pipe(
                     rx.mergeMap(model.fetch.bind(model))
                 )
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('Observable throw');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should handle observable rejecting', done => {
@@ -596,10 +583,9 @@ describe('index.js', () => {
                 .pipe(
                     rx.mergeMap(model.fetch.bind(model))
                 )
-                .subscribe(null, err => {
+                .subscribe(null, testing.rx(err => {
                     expect(err.message).to.equal('ACL refused request');
-                    done();
-                });
+                }, null, done));
         });
 
         it('should handle observable granting', done => {
@@ -618,9 +604,9 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith(args);
-                }, null, done);
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith(args);
+                }, null, done));
         });
     });
 
@@ -649,9 +635,9 @@ describe('index.js', () => {
                     rx.mergeMap(model.fetch.bind(model)),
                     rx.toArray()
                 )
-                .subscribe(() => {
-                    expect(Model.fetchSpy).to.have.been.calledWith(args);
-                }, null, done);
+                .subscribe(testing.rx(() => {
+                    expect(testing.Model.fetchSpy).to.have.been.calledWith(args);
+                }, null, done));
         });
     });
 });
