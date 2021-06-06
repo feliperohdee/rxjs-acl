@@ -1,5 +1,6 @@
-const _ = require('./lodash');
-const rx = require('./rx');
+const _ = require('lodash');
+const rx = require('rxjs');
+const rxop = require('rxjs/operators');
 
 module.exports = class Acl {
     constructor(acls, context, executors = true, rootAccess = `root-${process.pid}`) {
@@ -65,20 +66,20 @@ module.exports = class Acl {
 
             // handle args
             return operation.pipe(
-                rx.mergeMap(([
+                rxop.mergeMap(([
                     type,
                     acl
                 ]) => {
                     return this.handle(type, acl, args, auth);
                 }),
-                rx.reduce((reduction, args) => {
+                rxop.reduce((reduction, args) => {
                     if (args === false) {
                         throw options.onReject ? options.onReject() : new Error(`ACL refused request`);
                     }
 
                     return _.isObject(args) ? _.extend({}, reduction, args) : args;
                 }, {}),
-                rx.catchError(err => {
+                rxop.catchError(err => {
                     if (options.rejectSilently) {
                         return rx.empty();
                     }
@@ -114,7 +115,7 @@ module.exports = class Acl {
         }
 
         return result.pipe(
-            rx.map(result => {
+            rxop.map(result => {
                 if (result instanceof Error) {
                     throw result;
                 }

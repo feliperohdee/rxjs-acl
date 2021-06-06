@@ -1,7 +1,6 @@
+const _ = require('lodash');
+const rx = require('rxjs');
 const sinon = require('sinon');
-
-const _ = require('../lodash');
-const rx = require('../rx');
 
 class Model {
 	fetch(params) {
